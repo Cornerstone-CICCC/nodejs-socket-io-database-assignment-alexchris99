@@ -1,0 +1,142 @@
+---
+import Layout from '../layouts/Layout.astro';
+
+// Welcome to Astro! Wondering what to do next? Check out the Astro documentation at https://docs.astro.build
+// Don't want to use any of this? Delete everything in this file, the `assets`, `components`, and `layouts` directories, and start fresh.
+---
+
+<Layout>
+	<h1>Chat page</h1>
+	<label for="rooms">Seelect Room</label>
+	<select name="rooms" id="room">
+		<option selected value="general">General room</option>
+		<option value="room1">Room 1</option>
+		<option value="room2" >Room 2</option>
+		<option value="room3" >Room 3</option>
+	</select>
+
+	<form id="message_form">
+		
+		<label for="username">
+			<input type="text" id="username" placeholder="Username" required>
+		</label>
+		<label for="message">
+			<input type="text" id="message" placeholder="Message" required>
+			<button type="submit">Send Message</button>
+		</label>
+	</form>
+
+	<ul id="chat_box">
+
+	</ul>
+
+	<script type="module">
+		 import { io } from "https://cdn.socket.io/4.8.1/socket.io.esm.min.js"
+
+		// selectors
+		const socket = io('http://localhost:3000') // backend url comunication
+		const form = document.querySelector("#message_form")
+		const chat = document.querySelector("#chat_box")
+		const username = form.querySelector("#username")
+		const message = form.querySelector("#message")
+		const rooms = document.querySelector("#room")
+		let roomName = "general"
+		let currentRoom = ""
+
+		// get message by room
+		const getMessageByRoom = async (room) =>{
+			const data = await fetch(`http://localhost:3000/api/chat/${room}`,{
+				method: "GET",
+				credentials: "include"
+			})
+			const res = await data.json()
+			res.forEach(message => {
+				const li = document.createElement("li")
+		 		li.innerHTML = `<p style='color: black'}">${ message.username  + " " + message.message}</p>`
+				chat.appendChild(li)
+			});
+		}
+
+		// get all messages
+		const getAllMessages = async()=>{
+			chat.innerHTML = " "
+			const data = await fetch(`http://localhost:3000/api/chat`,{
+				method: "GET",
+				credentials: "include"
+			})
+			const res = await data.json()
+			res.forEach(message => {
+				const li = document.createElement("li")
+		 		li.innerHTML = `<p style='color: black'}">${ message.username  + " " + message.message}</p>`
+				chat.appendChild(li)
+			});
+		}
+
+		// room selector 
+		const roomsGroups = (room) =>{
+			if(room != "general"){
+				getMessageByRoom(roomName)
+			}
+			if(!room){
+				getAllMessages()
+			}else if( room === "general"){
+				getAllMessages()
+			}
+		}
+
+
+		roomsGroups(roomName)
+
+
+		// rooms selector
+		rooms.addEventListener("change",(e)=>{
+			roomName = e.target.value
+			roomsGroups(roomName)
+			const user = username 
+			chat.innerHTML = ""
+
+			// leave the room
+			if(!currentRoom){
+				socket.emit("Leave room",{
+					username: user,
+					room: currentRoom
+				})
+			}
+
+			currentRoom = roomName // asing the new room'
+
+			// Join a new room
+			socket.emit("Join room",{
+				username: username,
+				room: currentRoom,
+			})		
+
+			chat.innerHTML = ""// reset all the messages
+		})
+ 
+		// send the server a message
+		form.addEventListener("submit",(e)=>{
+			e.preventDefault()
+			socket.emit("sendMessage",{ 
+				username: username.value,
+				message: message.value,
+				room: roomName
+			})
+			message.value = " " // clear the text field
+		})
+
+		// Listening for new messages
+        socket.on('sendMessage', (data) => {
+            if (data.room === currentRoom) {
+                const li = document.createElement('li')
+                li.innerHTML = `<p style='color: black'}">${ data.username  + " " + data.message}</p>`
+                chat.appendChild(li)
+            }
+        })
+
+
+	</script>
+</Layout>
+
+
+

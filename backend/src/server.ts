@@ -12,7 +12,10 @@ dotenv.config();
 const app = express();
 
 // Middleware
-app.use(cors());
+app.use(cors({
+  origin: "http://localhost:4321",
+  credentials: true
+}));
 app.use(express.json());
 
 // Routes
@@ -21,14 +24,14 @@ app.use('/api/chat', chatRouter);
 // Create HTTP server and attach Socket.IO
 const server = createServer(app);
 const io = new Server(server, {
-  cors: {
-    origin: '', // Your frontend url here (Astro, React, vanilla HTML)
-    methods: ["GET", "POST"]
-  },
+  cors: { // Astro cors orgin conection 
+    origin: 'http://localhost:4321', // Astro port
+    methods: ['GET', 'POST']
+  }
 });
 
 // Connect to MongoDB and start server
-const MONGO_URI = process.env.DATABASE_URL!
+const MONGO_URI = process.env.MONGO_DB_URL!
 mongoose
   .connect(MONGO_URI, { dbName: 'chatroom' })
   .then(() => {
