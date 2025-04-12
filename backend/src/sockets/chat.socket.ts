@@ -5,7 +5,21 @@ const setupChatSocket = (io: Server,) => {
   io.on('connection', (socket: Socket) => {
     // On connect
     console.log(`User connected: ${socket.id}`);
-    io.emit(`Join room`, socket.id)
+  
+    socket.on('Join room', async (data)=>{
+      const {username, message, room} = data
+      try{
+        // save the person joining the group
+        const chat = new Chat({username, message, room})
+        await chat.save()
+
+        // brodcast the message
+        io.emit('sendMessage', chat);
+
+      }catch(err){
+        console.error('Error saving the chat', err)
+      }
+    })
 
     // Listen to 'sendMessage' event
     socket.on('sendMessage', async (data) => {
@@ -25,9 +39,21 @@ const setupChatSocket = (io: Server,) => {
       }
     });
 
+    socket.on('Leave room', async (data)=>{
+      const {username, message, room} = data
+      try{
+        // save the person who left the group
+        const chat = new Chat({username, message, room})
+        await chat.save()
+        // brodcast the message
+        io.emit('sendMessage', chat);
+      }catch(err){
+        console.error('Error saving the chat', err)
+      }
+    })
     // On disconnect
     socket.on('disconnect', () => {
-      console.log(`User disconnected: ${socket.id}`);
+      //console.log(`User disconnected: ${socket.id}`);
     });
   });
 };

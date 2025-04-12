@@ -42,6 +42,7 @@ import Layout from '../layouts/Layout.astro';
 		const rooms = document.querySelector("#room")
 		let roomName = "general"
 		let currentRoom = ""
+		let user =  ""
 
 		// get message by room
 		const getMessageByRoom = async (room) =>{
@@ -90,15 +91,18 @@ import Layout from '../layouts/Layout.astro';
 
 		// rooms selector
 		rooms.addEventListener("change",(e)=>{
+			user = username.value || 'Anonymous'
 			roomName = e.target.value
-			roomsGroups(roomName)
-			const user = username 
+			roomsGroups(roomName) 
 			chat.innerHTML = ""
 
+	
 			// leave the room
-			if(!currentRoom){
+			if(currentRoom){
+				console.log(true)
 				socket.emit("Leave room",{
 					username: user,
+					message: 'leaved the room',
 					room: currentRoom
 				})
 			}
@@ -106,10 +110,12 @@ import Layout from '../layouts/Layout.astro';
 			currentRoom = roomName // asing the new room'
 
 			// Join a new room
-			socket.emit("Join room",{
-				username: username,
-				room: currentRoom,
-			})		
+			socket.emit('Join room',{
+				username: user,
+				message: "joined the room",
+				room: currentRoom
+			})
+			
 
 			chat.innerHTML = ""// reset all the messages
 		})
@@ -118,7 +124,7 @@ import Layout from '../layouts/Layout.astro';
 		form.addEventListener("submit",(e)=>{
 			e.preventDefault()
 			socket.emit("sendMessage",{ 
-				username: username.value,
+				username: user,
 				message: message.value,
 				room: roomName
 			})
@@ -127,11 +133,15 @@ import Layout from '../layouts/Layout.astro';
 
 		// Listening for new messages
         socket.on('sendMessage', (data) => {
-            if (data.room === currentRoom) {
+			if(data.username === user && (data.message === "joined the room" || data.message === "leave the room")){
+				
+			}else{
+				if (data.room === currentRoom) {
                 const li = document.createElement('li')
-                li.innerHTML = `<p style='color: black'}">${ data.username  + " " + data.message}</p>`
-                chat.appendChild(li)
+                li.innerHTML = `<p style='color: black'}">${ data.username  + ":  " + data.message}</p>`
+                chat.prepend(li)
             }
+			}
         })
 
 

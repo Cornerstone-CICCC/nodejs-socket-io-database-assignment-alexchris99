@@ -14,7 +14,19 @@ const setupChatSocket = (io) => {
     io.on('connection', (socket) => {
         // On connect
         console.log(`User connected: ${socket.id}`);
-        io.emit(`Join room`, socket.id);
+        socket.on('Join room', (data) => __awaiter(void 0, void 0, void 0, function* () {
+            const { username, message, room } = data;
+            try {
+                // save the person joining the group
+                const chat = new chat_model_1.Chat({ username, message, room });
+                yield chat.save();
+                // brodcast the message
+                io.emit('sendMessage', chat);
+            }
+            catch (err) {
+                console.error('Error saving the chat', err);
+            }
+        }));
         // Listen to 'sendMessage' event
         socket.on('sendMessage', (data) => __awaiter(void 0, void 0, void 0, function* () {
             const { username, message, room } = data;
@@ -30,9 +42,22 @@ const setupChatSocket = (io) => {
                 console.error('Error saving chat:', error);
             }
         }));
+        socket.on('Leave room', (data) => __awaiter(void 0, void 0, void 0, function* () {
+            const { username, message, room } = data;
+            try {
+                // save the person who left the group
+                const chat = new chat_model_1.Chat({ username, message, room });
+                yield chat.save();
+                // brodcast the message
+                io.emit('sendMessage', chat);
+            }
+            catch (err) {
+                console.error('Error saving the chat', err);
+            }
+        }));
         // On disconnect
         socket.on('disconnect', () => {
-            console.log(`User disconnected: ${socket.id}`);
+            //console.log(`User disconnected: ${socket.id}`);
         });
     });
 };
